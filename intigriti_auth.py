@@ -27,17 +27,20 @@ def main(
     session.proxies = proxies
     session.headers = {'Accept': 'application/json'}
 
-    authorize_url:str = 'https://login.intigriti.com/connect/authorize'
-    token_url:str = 'https://login.intigriti.com/connect/token'
-
-    authorization_url, state = session.authorization_url(authorize_url)
+    authorization_url, state = session.authorization_url(url='https://login.intigriti.com/connect/authorize')
     print(f'Authorize here: {authorization_url}')
 
     redirect_response = input('Redirect URL: ')
+
     session.fetch_token(
-        token_url,
+        token_url='https://login.intigriti.com/connect/token',
         client_secret=client_secret,
-        authorization_response=redirect_response,
+        authorization_response=authorization_url,
+        # client_id=client_id,
+        include_client_id=True,
+        grant_type='authorization_code',
+        redirect_uri=redirect_response,
+        scopes='offline_access'
     )
     refresh_token: str = session.token.get('refresh_token')  # TODO: save this somewhere
     # token: str = session.refresh_token(token_url=token_url, refresh_token=refresh_token)
