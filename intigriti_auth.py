@@ -77,6 +77,6 @@ if __name__ == '__main__':
         client_secret=args.client_secret,
         proxies=proxies,
     ):
-        print(data)
+        print(f'Refresh token: {data}')
     else:
         print('whoops...')
