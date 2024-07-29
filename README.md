@@ -14,7 +14,6 @@ options:
   -h, --help                       show this help message and exit
   --client_id CLIENT_ID            The client_id for your Intigriti account
   --client_secret CLIENT_SECRET    The client_secret for your Intigriti account
-  --target_url TARGET_URL          Target URL after login
   --proxies PROXIES                JSON structure specifying 'http' and 'https' proxy URLs
 
 ```

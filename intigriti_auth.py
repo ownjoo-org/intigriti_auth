@@ -60,12 +60,6 @@ if __name__ == '__main__':
         help='The client_secret for your Intigriti account',
     )
     parser.add_argument(
-        '--target_url',
-        type=str,
-        required=True,
-        help='Target URL after login',
-    )
-    parser.add_argument(
         '--proxies',
         type=str,
         required=False,
