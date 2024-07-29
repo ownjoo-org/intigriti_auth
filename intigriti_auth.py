@@ -39,13 +39,28 @@ def main(
         # client_id=client_id,
         include_client_id=True,
         grant_type='authorization_code',
-        redirect_uri=redirect_response,
-        scopes='offline_access'
+        # redirect_uri=redirect_response,  # callback URL:
+        scope='offline_access'  # required to make it refreshable without re-authorizing
     )
     refresh_token: str = session.token.get('refresh_token')  # TODO: save this somewhere
-    # token: str = session.refresh_token(token_url=token_url, refresh_token=refresh_token)
+    token: str = session.refresh_token(
+        token_url='https://login.intigriti.com/connect/token',
+        refresh_token=refresh_token,
+        grant_type='refresh_token',
+        include_client_id=True,
+        # client_id=client_id,
+        client_secret=client_secret,
+    )
+    access_token: str = session.token.get('access_token')  # to be used as Bearer token
 
-    return refresh_token
+    print(f'Initial refresh token: {refresh_token}')
+    print(f'Refreshed refresh token: {token}')
+    print(f'Access token: {access_token}')
+
+    if token:
+        return token
+    else:
+        return refresh_token
 
 
 if __name__ == '__main__':
@@ -80,6 +95,6 @@ if __name__ == '__main__':
         client_secret=args.client_secret,
         proxies=proxies,
     ):
-        print(f'Refresh token: {data}')
+        print(f'Save this refresh token: {data}')
     else:
         print('whoops...')
