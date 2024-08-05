@@ -1,18 +1,17 @@
 import argparse
 import logging
 
-from json import loads
+from json import loads, dumps
 from typing import Optional
 
-from requests import Response
 from requests_oauthlib import OAuth2Session
 
 import http.client
 
+http.client.HTTPConnection.debuglevel = 0  # 0 for off, > 0 for on
+
 log_level: int = logging.ERROR
-http.client.HTTPConnection.debuglevel = log_level
 logging.basicConfig()
-logging.getLogger().setLevel(log_level)
 requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(log_level)
 requests_log.propagate = True
@@ -24,10 +23,10 @@ def main(
         callback: str = 'https://localhost/',
         uat: bool = False,
         proxies: Optional[dict] = None,
-) -> Response | str:
+) -> dict | str:
     session = OAuth2Session(
         client_id=client_id,
-        scope=['offline_access'],
+        scope=['offline_access'],  # must be set here for authorization and initial token to work
         redirect_uri=callback,
     )
     session.proxies = proxies
@@ -40,8 +39,8 @@ def main(
         url=f'https://login{uat_suffix}.intigriti.com/connect/authorize',
     )
 
-    print(f'Authorize here: {authorization_url}')
-    redirect_response = input('Redirect URL: ')
+    print(f'\nAuthorize here: {authorization_url}')
+    redirect_response = input('\nPaste Redirect URL: ')
 
     token_resp: dict = session.fetch_token(
         token_url=f'https://login{uat_suffix}.intigriti.com/connect/token',
@@ -50,18 +49,16 @@ def main(
     )
 
     refresh_token: str = token_resp.get('refresh_token')  # TODO: save this somewhere
-    access_token: str = token_resp.get('access_token')  # to be used as Bearer token
-    session.scope = None
+    session.scope = None  # causes 400 error if scope is included in refresh_token call
     refresh_resp: dict = session.refresh_token(
         token_url=f'https://login{uat_suffix}.intigriti.com/connect/token',
         refresh_token=refresh_token,
         client_id=client_id,
         client_secret=client_secret,
     )
-
-    print(f'Initial refresh token: {refresh_token}')
-    print(f'Refreshed refresh token: {refresh_resp}')
-    print(f'Access token: {access_token}')
+    # access_token: str = refresh_resp.get('access_token')  # to be used as Bearer token
+    requests_log.debug(f' Initial token response:\n{dumps(token_resp, indent=4)}')
+    requests_log.debug(f' Refresh token response:\n{dumps(refresh_resp, indent=4)}')
 
     if token_resp:
         return token_resp
@@ -116,6 +113,6 @@ if __name__ == '__main__':
         uat=args.uat or False,
         proxies=proxies,
     ):
-        print(f'Save this refresh token: {data}')
+        print(f'\n\nSave this refresh token: {data.get("refresh_token")}\n\n')
     else:
         print('whoops...')
