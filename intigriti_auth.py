@@ -21,19 +21,30 @@ requests_log.propagate = True
 def main(
         client_id: str,
         client_secret: str,
+        callback: str = 'https://localhost/',
+        uat: bool = False,
         proxies: Optional[dict] = None,
 ) -> Response | str:
-    session = OAuth2Session(client_id=client_id)
+    session = OAuth2Session(
+        client_id=client_id,
+        scope=['offline_access'],
+        redirect_uri=callback,
+    )
     session.proxies = proxies
     session.headers = {'Accept': 'application/json'}
 
-    authorization_url, state = session.authorization_url(url='https://login.intigriti.com/connect/authorize')
+    uat_suffix: str = ''
+    if uat:
+        uat_suffix = '-uat'
+    authorization_url, state = session.authorization_url(
+        url=f'https://login{uat_suffix}.intigriti.com/connect/authorize',
+    )
     print(f'Authorize here: {authorization_url}')
 
     redirect_response = input('Redirect URL: ')
 
     session.fetch_token(
-        token_url='https://login.intigriti.com/connect/token',
+        token_url=f'https://login{uat_suffix}.intigriti.com/connect/token',
         client_secret=client_secret,
         authorization_response=authorization_url,
         # client_id=client_id,
@@ -43,8 +54,8 @@ def main(
         scope='offline_access'  # required to make it refreshable without re-authorizing
     )
     refresh_token: str = session.token.get('refresh_token')  # TODO: save this somewhere
-    token: str = session.refresh_token(
-        token_url='https://login.intigriti.com/connect/token',
+    token_resp: dict = session.refresh_token(
+        token_url=f'https://login{uat_suffix}.intigriti.com/connect/token',
         refresh_token=refresh_token,
         grant_type='refresh_token',
         include_client_id=True,
@@ -54,11 +65,11 @@ def main(
     access_token: str = session.token.get('access_token')  # to be used as Bearer token
 
     print(f'Initial refresh token: {refresh_token}')
-    print(f'Refreshed refresh token: {token}')
+    print(f'Refreshed refresh token: {token_resp}')
     print(f'Access token: {access_token}')
 
-    if token:
-        return token
+    if token_resp:
+        return token_resp
     else:
         return refresh_token
 
@@ -78,6 +89,19 @@ if __name__ == '__main__':
         help='The client_secret for your Intigriti account',
     )
     parser.add_argument(
+        '--callback',
+        type=str,
+        required=False,
+        help='The callback/redirect URL configured for the client_id',
+        default='https://localhost/',
+    )
+    parser.add_argument(
+        '--uat',
+        type=bool,
+        required=False,
+        help="connect to intigriti UAT env",
+    )
+    parser.add_argument(
         '--proxies',
         type=str,
         required=False,
@@ -93,6 +117,8 @@ if __name__ == '__main__':
     if data := main(
         client_id=args.client_id,
         client_secret=args.client_secret,
+        callback=args.callback,
+        uat=args.uat or False,
         proxies=proxies,
     ):
         print(f'Save this refresh token: {data}')
