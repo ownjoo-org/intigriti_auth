@@ -39,33 +39,28 @@ def main(
     authorization_url, state = session.authorization_url(
         url=f'https://login{uat_suffix}.intigriti.com/connect/authorize',
     )
-    print(f'Authorize here: {authorization_url}')
 
+    print(f'Authorize here: {authorization_url}')
     redirect_response = input('Redirect URL: ')
 
-    session.fetch_token(
+    token_resp: dict = session.fetch_token(
         token_url=f'https://login{uat_suffix}.intigriti.com/connect/token',
         client_secret=client_secret,
-        authorization_response=authorization_url,
-        # client_id=client_id,
-        include_client_id=True,
-        grant_type='authorization_code',
-        # redirect_uri=redirect_response,  # callback URL:
-        scope='offline_access'  # required to make it refreshable without re-authorizing
+        authorization_response=redirect_response,
     )
-    refresh_token: str = session.token.get('refresh_token')  # TODO: save this somewhere
-    token_resp: dict = session.refresh_token(
+
+    refresh_token: str = token_resp.get('refresh_token')  # TODO: save this somewhere
+    access_token: str = token_resp.get('access_token')  # to be used as Bearer token
+    session.scope = None
+    refresh_resp: dict = session.refresh_token(
         token_url=f'https://login{uat_suffix}.intigriti.com/connect/token',
         refresh_token=refresh_token,
-        grant_type='refresh_token',
-        include_client_id=True,
-        # client_id=client_id,
+        client_id=client_id,
         client_secret=client_secret,
     )
-    access_token: str = session.token.get('access_token')  # to be used as Bearer token
 
     print(f'Initial refresh token: {refresh_token}')
-    print(f'Refreshed refresh token: {token_resp}')
+    print(f'Refreshed refresh token: {refresh_resp}')
     print(f'Access token: {access_token}')
 
     if token_resp:
