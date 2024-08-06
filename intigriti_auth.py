@@ -15,7 +15,7 @@ logging.basicConfig()
 requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(log_level)
 requests_log.propagate = True
-DEFAULT_SCOPES: str = 'company_external_api,offline_access,core_platform: read,reward_system:read'
+DEFAULT_SCOPES: str = 'company_external_api,offline_access,core_platform:read,core_platform:write,reward_system:read, reward_system:write'
 
 def main(
         client_id: str,
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--scopes',
         type=str,
-        help='The scopes for this Intigriti refresh token.',
+        help='Comma-separated list of scopes for this Intigriti refresh token.',
         default=DEFAULT_SCOPES,
     )
     parser.add_argument(
