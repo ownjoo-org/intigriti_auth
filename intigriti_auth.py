@@ -15,17 +15,17 @@ logging.basicConfig()
 requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(log_level)
 requests_log.propagate = True
-
+DEFAULT_SCOPES: str = 'company_external_api,offline_access,core_platform: read,reward_system:read'
 
 def main(
         client_id: str,
         client_secret: str,
-        scopes: str = 'offline_access',
+        scopes: str = DEFAULT_SCOPES,
         callback: str = 'https://localhost/',
         uat: bool = False,
         proxies: Optional[dict] = None,
 ) -> dict | str:
-    scope = scopes.split(',') if isinstance(scopes, str) else scopes
+    scope = scopes.split(',') if isinstance(scopes, str) else DEFAULT_SCOPES.split(',')
     session = OAuth2Session(
         client_id=client_id,
         scope=scope,  # must be set here for authorization and initial token to work
@@ -85,8 +85,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--scopes',
         type=str,
-        help='The scopes for this Intigriti refresh token.  Make sure to include "offline_access"!!',
-        default='offline_access',
+        help='The scopes for this Intigriti refresh token.',
+        default=DEFAULT_SCOPES,
     )
     parser.add_argument(
         '--callback',
