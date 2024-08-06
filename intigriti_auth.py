@@ -85,7 +85,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--scopes',
         type=str,
-        help='The scopes for this Intigriti refresh token',
+        help='The scopes for this Intigriti refresh token.  Make sure to include "offline_access"!!',
         default='offline_access',
     )
     parser.add_argument(
