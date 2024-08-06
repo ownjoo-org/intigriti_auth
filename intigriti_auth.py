@@ -20,13 +20,15 @@ requests_log.propagate = True
 def main(
         client_id: str,
         client_secret: str,
+        scopes: str = 'offline_access',
         callback: str = 'https://localhost/',
         uat: bool = False,
         proxies: Optional[dict] = None,
 ) -> dict | str:
+    scope = scopes.split(',') if isinstance(scopes, str) else scopes
     session = OAuth2Session(
         client_id=client_id,
-        scope=['offline_access'],  # must be set here for authorization and initial token to work
+        scope=scope,  # must be set here for authorization and initial token to work
         redirect_uri=callback,
     )
     session.proxies = proxies
@@ -81,6 +83,12 @@ if __name__ == '__main__':
         help='The client_secret for your Intigriti account',
     )
     parser.add_argument(
+        '--scopes',
+        type=str,
+        help='The scopes for this Intigriti refresh token',
+        default='offline_access',
+    )
+    parser.add_argument(
         '--callback',
         type=str,
         required=False,
@@ -109,6 +117,7 @@ if __name__ == '__main__':
     if data := main(
         client_id=args.client_id,
         client_secret=args.client_secret,
+        scopes=args.scopes,
         callback=args.callback,
         uat=args.uat or False,
         proxies=proxies,
