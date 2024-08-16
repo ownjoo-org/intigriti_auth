@@ -107,12 +107,23 @@ if __name__ == '__main__':
         required=False,
         help="JSON structure specifying 'http' and 'https' proxy URLs",
     )
+    parser.add_argument(
+        '--debug',
+        type=bool,
+        required=False,
+        default=False,
+        help="enable debug logging",
+    )
 
     args = parser.parse_args()
 
     proxies: Optional[dict] = None
     if args.proxies:
         proxies: dict = loads(args.proxies)
+
+    if args.debug:
+        http.client.HTTPConnection.debuglevel = 1  # 0 for off, > 0 for on
+        requests_log.setLevel(args.debug)
 
     if data := main(
         client_id=args.client_id,
