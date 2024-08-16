@@ -59,7 +59,7 @@ def main(
         authorization_response=redirect_response,
     )
 
-    refresh_token: str = token_resp.get('refresh_token')  # TODO: save this somewhere
+    refresh_token: str = token_resp.get('refresh_token')
     session.scope = None  # causes 400 error if scope is included in refresh_token call
     refresh_resp: dict = session.refresh_token(
         token_url=f'https://login{uat_suffix}.intigriti.com/connect/token',
@@ -67,6 +67,8 @@ def main(
         client_id=client_id,
         client_secret=client_secret,
     )
+    refresh_token = refresh_resp.get('refresh_token')
+
     # access_token: str = refresh_resp.get('access_token')  # to be used as Bearer token
     requests_log.debug(f' Initial token response:\n{dumps(token_resp, indent=4)}')
     requests_log.debug(f' Refresh token response:\n{dumps(refresh_resp, indent=4)}')
