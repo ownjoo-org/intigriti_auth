@@ -25,6 +25,7 @@ default_scopes: list = [
 ]
 DEFAULT_SCOPES: str = ','.join(default_scopes)
 
+
 def main(
         client_id: str,
         client_secret: str,
