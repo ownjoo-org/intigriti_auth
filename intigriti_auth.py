@@ -15,7 +15,15 @@ logging.basicConfig()
 requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(log_level)
 requests_log.propagate = True
-DEFAULT_SCOPES: str = 'company_external_api,offline_access,core_platform:read,core_platform:write,reward_system:read, reward_system:write'
+DEFAULT_SCOPES: str | list = [
+    'company_external_api',
+    'offline_access',
+    'core_platform:read',
+    # 'core_platform:write',
+    # 'reward_system:read',
+    # 'reward_system:write'
+]
+DEFAULT_SCOPES = ','.join(DEFAULT_SCOPES)
 
 def main(
         client_id: str,
