@@ -15,7 +15,7 @@ logging.basicConfig()
 requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(log_level)
 requests_log.propagate = True
-DEFAULT_SCOPES: str | list = [
+default_scopes: list = [
     'company_external_api',
     'offline_access',
     'core_platform:read',
@@ -23,7 +23,7 @@ DEFAULT_SCOPES: str | list = [
     # 'reward_system:read',
     # 'reward_system:write'
 ]
-DEFAULT_SCOPES = ','.join(DEFAULT_SCOPES)
+DEFAULT_SCOPES: str = ','.join(default_scopes)
 
 def main(
         client_id: str,
@@ -33,7 +33,7 @@ def main(
         uat: bool = False,
         proxies: Optional[dict] = None,
 ) -> dict | str:
-    scope = scopes.split(',') if isinstance(scopes, str) else DEFAULT_SCOPES.split(',')
+    scope = scopes.split(',') if scopes and isinstance(scopes, str) else default_scopes
     session = OAuth2Session(
         client_id=client_id,
         scope=scope,  # must be set here for authorization and initial token to work
