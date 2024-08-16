@@ -120,9 +120,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--debug',
-        type=bool,
-        required=False,
-        default=False,
+        type=int,
         help="enable debug logging",
     )
 
@@ -133,7 +131,7 @@ if __name__ == '__main__':
         proxies: dict = loads(args.proxies)
 
     if args.debug:
-        http.client.HTTPConnection.debuglevel = 1  # 0 for off, > 0 for on
+        http.client.HTTPConnection.debuglevel = args.debug
         requests_log.setLevel(args.debug)
 
     if data := main(
