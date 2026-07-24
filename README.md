@@ -71,3 +71,15 @@ Save this refresh token: <your refresh token>
   solving the CAPTCHA) isn't something this project does.
 - `client_id`/`client_secret` are only ever used for the direct, server-to-server token exchange and refresh
   calls (via httpx/Authlib) — they're never exposed to the browser/page context.
+
+# testing
+```
+# unit tests -- fast, no network or browser (OAuth2Client and the browser leg are mocked)
+$ python -m unittest discover -s test/unit -t .
+
+# integration tests -- launches a real Chromium browser via Playwright against a local fixture server
+$ python -m unittest discover -s test/int -t .
+
+# everything
+$ python -m unittest discover -s test -t .
+```
