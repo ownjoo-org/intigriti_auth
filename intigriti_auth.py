@@ -78,6 +78,7 @@ def main(
         redirect_uri=callback,
         proxy=proxies,
         headers={'Accept': 'application/json'},
+        http2=True,
     )
 
     uat_suffix: str = ''

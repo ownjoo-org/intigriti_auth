@@ -7,7 +7,7 @@ your own static analysis and supply chain testing before use.  Many libraries ar
 
 # requirements
 - Python 3
-- [httpx](https://pypi.org/project/httpx/)
+- [httpx](https://pypi.org/project/httpx/) (with the `http2` extra — Intigriti's endpoints negotiate HTTP/2)
 - [Authlib](https://pypi.org/project/Authlib/)
 - [Playwright](https://pypi.org/project/playwright/) (also requires a one-time browser install, see below)
 
