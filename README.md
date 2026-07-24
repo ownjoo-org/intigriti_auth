@@ -16,6 +16,10 @@ $ pip install -r requirements.txt
 $ playwright install chromium
 ```
 
+`playwright install chromium` is only needed for the default `--browser chromium`. If you pass `--browser chrome`
+or `--browser msedge` instead, Playwright drives your already-installed system browser directly and skips that
+download entirely — useful in locked-down environments where downloading extra browser binaries isn't possible.
+
 # usage
 Running the script starts an interactive OAuth2 authorization code flow. By default it opens a real (visible)
 Chromium window to the Intigriti authorization URL for you to log in, complete MFA/CAPTCHA, and consent — it then
@@ -28,7 +32,7 @@ prompts you to paste back the redirect URL.
 
 ```
 $ python intigriti_auth.py -h
-usage: intigriti_auth.py [-h] --client_id CLIENT_ID --client_secret CLIENT_SECRET [--scopes SCOPES] [--callback CALLBACK] [--uat UAT] [--proxies PROXIES] [--debug DEBUG] [--manual]
+usage: intigriti_auth.py [-h] --client_id CLIENT_ID --client_secret CLIENT_SECRET [--scopes SCOPES] [--callback CALLBACK] [--uat UAT] [--proxies PROXIES] [--debug DEBUG] [--manual] [--browser {chrome,chromium,msedge}]
 
 options:
   -h, --help                       show this help message and exit
@@ -42,6 +46,10 @@ options:
   --debug DEBUG                    enable debug logging (verbosity level)
   --manual                         fall back to the old flow: print the authorization URL and prompt for the
                                     pasted redirect URL, instead of opening a browser and capturing it automatically
+  --browser {chrome,chromium,msedge}
+                                    which browser to drive for the automatic login flow. 'chromium' (default) is
+                                    Playwright's bundled build; 'chrome' and 'msedge' drive your already-installed
+                                    system browser instead, with no extra download
 
 ```
 

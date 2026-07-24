@@ -28,7 +28,19 @@ DEFAULT_SCOPES: str = ','.join(default_scopes)
 DEFAULT_CALLBACK: str = 'https://localhost/'
 
 
-def get_redirect_via_browser(authorization_url: str, callback: str, timeout_s: float = 300) -> str:
+BROWSER_CHANNELS: dict = {
+    'chromium': None,  # Playwright's own bundled build, requires `playwright install chromium`
+    'chrome': 'chrome',  # drives the system-installed Google Chrome, no extra download
+    'msedge': 'msedge',  # drives the system-installed Microsoft Edge, no extra download
+}
+
+
+def get_redirect_via_browser(
+        authorization_url: str,
+        callback: str,
+        timeout_s: float = 300,
+        channel: Optional[str] = None,
+) -> str:
     """Open authorization_url in a real (headed) browser, let the user complete
     login/MFA/CAPTCHA/consent by hand, and capture the resulting redirect to
     `callback` without ever letting the browser actually try to load it."""
@@ -43,7 +55,7 @@ def get_redirect_via_browser(authorization_url: str, callback: str, timeout_s: f
         )
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=False, channel=channel)
         page = browser.new_page()
         page.route(f'{callback}*', _capture)
         page.goto(authorization_url)
@@ -69,6 +81,7 @@ def main(
         uat: bool = False,
         proxies: Optional[dict] = None,
         manual: bool = False,
+        browser: str = 'chromium',
 ) -> dict | str:
     scope = scopes.split(',') if scopes and isinstance(scopes, str) else default_scopes
     session = OAuth2Client(
@@ -93,7 +106,11 @@ def main(
         redirect_response = input('\nPaste Redirect URL: ')
     else:
         print('\nOpening browser to authorize... complete login/MFA/CAPTCHA/consent there.')
-        redirect_response = get_redirect_via_browser(authorization_url, callback)
+        redirect_response = get_redirect_via_browser(
+            authorization_url,
+            callback,
+            channel=BROWSER_CHANNELS[browser],
+        )
 
     token_resp: dict = session.fetch_token(
         url=f'https://login{uat_suffix}.intigriti.com/connect/token',
@@ -168,6 +185,15 @@ if __name__ == '__main__':
         help="fall back to the old flow: print the authorization URL and prompt for the pasted redirect URL, "
              "instead of opening a browser and capturing it automatically",
     )
+    parser.add_argument(
+        '--browser',
+        type=str,
+        choices=sorted(BROWSER_CHANNELS),
+        default='chromium',
+        help="which browser to drive for the automatic login flow. 'chromium' is Playwright's bundled build "
+             "(requires `playwright install chromium`); 'chrome' and 'msedge' drive your already-installed "
+             "system browser instead, with no extra download -- useful in locked-down environments.",
+    )
 
     args = parser.parse_args()
 
@@ -187,6 +213,7 @@ if __name__ == '__main__':
         uat=args.uat or False,
         proxies=proxies,
         manual=args.manual,
+        browser=args.browser,
     ):
         print(f'\n\nSave this refresh token: {data.get("refresh_token")}\n\n')
     else:
