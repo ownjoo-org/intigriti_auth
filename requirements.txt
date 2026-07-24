@@ -1,4 +1,4 @@
 httpx[http2]>=0.28
 Authlib>=1.7
 playwright>=1.61
-oj-toolkit>=0.1.8
+oj-toolkit>=0.1.9
