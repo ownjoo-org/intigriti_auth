@@ -1,17 +1,25 @@
+"""Interactive OAuth2 authorization-code flow for the Intigriti API.
+
+Drives Intigriti's Duende IdentityServer endpoints (authorize -> token -> refresh)
+via an httpx/Authlib OAuth2Client, and automates the browser leg of the flow with
+Playwright: it opens a real, headed browser to the authorization URL, lets the
+human complete login/MFA/CAPTCHA/consent (none of that is or can be automated
+here), and captures the resulting redirect via request interception instead of
+requiring a manual copy/paste of the redirect URL.
+"""
+
 import argparse
 import logging
-
-from json import loads, dumps
-from typing import Optional
+from json import dumps, loads
 
 from authlib.integrations.httpx_client import OAuth2Client
 from oj_toolkit.logging import configure_logging
 from oj_toolkit.parsing.types import dig, str_to_list
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Route, sync_playwright
 
 logger = logging.getLogger(__name__)
 
-default_scopes: list = [
+default_scopes: list[str] = [
     'company_external_api',
     'offline_access',
     'core_platform:read',
@@ -22,8 +30,10 @@ default_scopes: list = [
 DEFAULT_SCOPES: str = ','.join(default_scopes)
 DEFAULT_CALLBACK: str = 'https://localhost/'
 
-
-BROWSER_CHANNELS: dict = {
+# Playwright's `channel` argument for browser_type.launch(): None drives Playwright's
+# own bundled Chromium build (requires `playwright install chromium`); the others drive
+# an already-installed system browser directly, with no extra binary download needed.
+BROWSER_CHANNELS: dict[str, str | None] = {
     'chromium': None,  # Playwright's own bundled build, requires `playwright install chromium`
     'chrome': 'chrome',  # drives the system-installed Google Chrome, no extra download
     'msedge': 'msedge',  # drives the system-installed Microsoft Edge, no extra download
@@ -34,14 +44,35 @@ def get_redirect_via_browser(
         authorization_url: str,
         callback: str,
         timeout_s: float = 300,
-        channel: Optional[str] = None,
+        channel: str | None = None,
 ) -> str:
     """Open authorization_url in a real (headed) browser, let the user complete
     login/MFA/CAPTCHA/consent by hand, and capture the resulting redirect to
-    `callback` without ever letting the browser actually try to load it."""
-    captured: dict = {}
+    `callback` without ever letting the browser actually try to load it.
 
-    def _capture(route):
+    Args:
+        authorization_url: The IdentityServer /connect/authorize URL to open.
+        callback: The registered redirect_uri to watch for and intercept
+            (e.g. 'https://localhost/'). Nothing needs to be listening on it --
+            the request is captured and short-circuited before it's ever sent.
+        timeout_s: How long to wait for the user to complete the browser flow
+            before giving up.
+        channel: Playwright browser channel to launch (see BROWSER_CHANNELS).
+            None launches Playwright's own bundled Chromium build.
+
+    Returns:
+        The full redirect URL (including the `code`/`state` query string) that
+        the browser was sent to after authorization completed.
+
+    Raises:
+        TimeoutError: If the redirect isn't captured within timeout_s.
+    """
+    captured: dict[str, str] = {}
+
+    def _capture(route: Route) -> None:
+        # Intercept the browser's navigation to `callback` and answer it locally
+        # instead of letting it actually connect -- `callback` is typically
+        # unroutable (e.g. https://localhost/ with nothing listening).
         captured['url'] = route.request.url
         route.fulfill(
             status=200,
@@ -74,11 +105,36 @@ def main(
         scopes: str = DEFAULT_SCOPES,
         callback: str = DEFAULT_CALLBACK,
         uat: bool = False,
-        proxies: Optional[dict] = None,
+        proxies: dict[str, str] | None = None,
         manual: bool = False,
         browser: str = 'chromium',
-) -> dict | str:
-    scope = str_to_list(scopes) if scopes else default_scopes
+) -> dict | str | None:
+    """Run the full OAuth2 authorization-code flow against Intigriti and return tokens.
+
+    Requests an authorization code (via a headed browser by default, or manually
+    if `manual` is set), exchanges it for an access/refresh token pair, then
+    immediately performs a refresh to obtain a refreshed refresh token -- Intigriti
+    refresh tokens rotate on use, so the one returned by the initial token exchange
+    is not the one that should be persisted for future use.
+
+    Args:
+        client_id: OAuth2 client_id for the Intigriti app registration.
+        client_secret: OAuth2 client_secret for the same app registration.
+        scopes: Comma-separated scope list. Defaults to DEFAULT_SCOPES.
+        callback: The redirect_uri registered for client_id.
+        uat: If True, target Intigriti's UAT environment instead of production.
+        proxies: Optional {'http': ..., 'https': ...}-style proxy mapping.
+        manual: If True, print the authorization URL and prompt for the pasted
+            redirect URL instead of driving a browser automatically.
+        browser: Which Playwright browser channel to use (see BROWSER_CHANNELS).
+            Ignored when manual=True.
+
+    Returns:
+        The initial token response dict on success (contains access_token,
+        refresh_token, etc.), or a bare refresh_token string in the unlikely
+        case fetch_token() returns a falsy response.
+    """
+    scope: list[str] | None = str_to_list(scopes) if scopes else default_scopes
     session = OAuth2Client(
         client_id=client_id,
         client_secret=client_secret,  # binds client_secret_basic auth for fetch_token/refresh_token
@@ -92,10 +148,11 @@ def main(
     uat_suffix: str = ''
     if uat:
         uat_suffix = '-uat'
-    authorization_url, state = session.create_authorization_url(
+    authorization_url, _state = session.create_authorization_url(
         url=f'https://login{uat_suffix}.intigriti.com/connect/authorize',
     )
 
+    redirect_response: str
     if manual:
         print(f'\nAuthorize here: {authorization_url}')
         redirect_response = input('\nPaste Redirect URL: ')
@@ -112,7 +169,7 @@ def main(
         authorization_response=redirect_response,
     )
 
-    refresh_token: str = dig(token_resp, path=['refresh_token'], exp=str)
+    refresh_token: str | None = dig(token_resp, path=['refresh_token'], exp=str)
     session.scope = None  # causes 400 error if scope is included in refresh_token call
     refresh_resp: dict = session.refresh_token(
         url=f'https://login{uat_suffix}.intigriti.com/connect/token',
@@ -192,9 +249,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    proxies: Optional[dict] = None
+    proxies: dict[str, str] | None = None
     if args.proxies:
-        proxies: dict = loads(args.proxies)
+        proxies = loads(args.proxies)
 
     configure_logging(service='intigriti_auth', level=args.debug or None)
 
