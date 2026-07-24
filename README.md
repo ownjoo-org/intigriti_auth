@@ -10,6 +10,7 @@ your own static analysis and supply chain testing before use.  Many libraries ar
 - [httpx](https://pypi.org/project/httpx/) (with the `http2` extra — Intigriti's endpoints negotiate HTTP/2)
 - [Authlib](https://pypi.org/project/Authlib/)
 - [Playwright](https://pypi.org/project/playwright/) (also requires a one-time browser install, see below)
+- [oj-toolkit](https://pypi.org/project/oj-toolkit/) — shared logging/parsing utilities
 
 ```
 $ pip install -r requirements.txt
@@ -43,7 +44,7 @@ options:
   --callback CALLBACK              The callback/redirect URL configured for the client_id (default: https://localhost/)
   --uat UAT                        connect to intigriti UAT env
   --proxies PROXIES                JSON structure specifying 'http' and 'https' proxy URLs
-  --debug DEBUG                    enable debug logging (verbosity level)
+  --debug DEBUG                    numeric logging level (e.g. 10 for DEBUG, 20 for INFO); default is WARNING
   --manual                         fall back to the old flow: print the authorization URL and prompt for the
                                     pasted redirect URL, instead of opening a browser and capturing it automatically
   --browser {chrome,chromium,msedge}

@@ -5,17 +5,12 @@ from json import loads, dumps
 from typing import Optional
 
 from authlib.integrations.httpx_client import OAuth2Client
+from oj_toolkit.logging import configure_logging
+from oj_toolkit.parsing.types import dig, str_to_list
 from playwright.sync_api import sync_playwright
 
-import http.client
+logger = logging.getLogger(__name__)
 
-http.client.HTTPConnection.debuglevel = 0  # 0 for off, > 0 for on
-
-log_level: int = logging.ERROR
-logging.basicConfig()
-requests_log = logging.getLogger("requests.packages.urllib3")
-requests_log.setLevel(log_level)
-requests_log.propagate = True
 default_scopes: list = [
     'company_external_api',
     'offline_access',
@@ -83,7 +78,7 @@ def main(
         manual: bool = False,
         browser: str = 'chromium',
 ) -> dict | str:
-    scope = scopes.split(',') if scopes and isinstance(scopes, str) else default_scopes
+    scope = str_to_list(scopes) if scopes else default_scopes
     session = OAuth2Client(
         client_id=client_id,
         client_secret=client_secret,  # binds client_secret_basic auth for fetch_token/refresh_token
@@ -117,17 +112,17 @@ def main(
         authorization_response=redirect_response,
     )
 
-    refresh_token: str = token_resp.get('refresh_token')
+    refresh_token: str = dig(token_resp, path=['refresh_token'], exp=str)
     session.scope = None  # causes 400 error if scope is included in refresh_token call
     refresh_resp: dict = session.refresh_token(
         url=f'https://login{uat_suffix}.intigriti.com/connect/token',
         refresh_token=refresh_token,
     )
-    refresh_token = refresh_resp.get('refresh_token')
+    refresh_token = dig(refresh_resp, path=['refresh_token'], exp=str)
 
     # access_token: str = refresh_resp.get('access_token')  # to be used as Bearer token
-    requests_log.debug(f' Initial token response:\n{dumps(token_resp, indent=4)}')
-    requests_log.debug(f' Refresh token response:\n{dumps(refresh_resp, indent=4)}')
+    logger.debug(f' Initial token response:\n{dumps(token_resp, indent=4)}')
+    logger.debug(f' Refresh token response:\n{dumps(refresh_resp, indent=4)}')
 
     if token_resp:
         return token_resp
@@ -177,7 +172,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--debug',
         type=int,
-        help="enable debug logging",
+        help="numeric logging level (e.g. 10 for DEBUG, 20 for INFO); default is WARNING",
     )
     parser.add_argument(
         '--manual',
@@ -201,9 +196,7 @@ if __name__ == '__main__':
     if args.proxies:
         proxies: dict = loads(args.proxies)
 
-    if args.debug:
-        http.client.HTTPConnection.debuglevel = args.debug
-        requests_log.setLevel(args.debug)
+    configure_logging(service='intigriti_auth', level=args.debug or None)
 
     if data := main(
         client_id=args.client_id,
@@ -215,6 +208,6 @@ if __name__ == '__main__':
         manual=args.manual,
         browser=args.browser,
     ):
-        print(f'\n\nSave this refresh token: {data.get("refresh_token")}\n\n')
+        print(f'\n\nSave this refresh token: {dig(data, path=["refresh_token"], exp=str)}\n\n')
     else:
         print('whoops...')
