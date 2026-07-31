@@ -169,13 +169,13 @@ def main(
         authorization_response=redirect_response,
     )
 
-    refresh_token: str | None = dig(token_resp, path=['refresh_token'], exp=str)
+    refresh_token: str | None = dig(token_resp, path='refresh_token', exp=str)
     session.scope = None  # causes 400 error if scope is included in refresh_token call
     refresh_resp: dict = session.refresh_token(
         url=f'https://login{uat_suffix}.intigriti.com/connect/token',
         refresh_token=refresh_token,
     )
-    refresh_token = dig(refresh_resp, path=['refresh_token'], exp=str)
+    refresh_token = dig(refresh_resp, path='refresh_token', exp=str)
 
     # access_token: str = refresh_resp.get('access_token')  # to be used as Bearer token
     logger.debug(f' Initial token response:\n{dumps(token_resp, indent=4)}')
@@ -265,6 +265,6 @@ if __name__ == '__main__':
         manual=args.manual,
         browser=args.browser,
     ):
-        print(f'\n\nSave this refresh token: {dig(data, path=["refresh_token"], exp=str)}\n\n')
+        print(f'\n\nSave this refresh token: {dig(data, path="refresh_token", exp=str)}\n\n')
     else:
         print('whoops...')
