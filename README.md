@@ -1,4 +1,6 @@
 # intigriti_auth
+
+[![License](https://img.shields.io/github/license/ownjoo/intigriti_auth)](LICENSE)
 OAuth2 authorization for the Intigriti API
 
 # SECURITY NOTE:
