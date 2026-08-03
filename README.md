@@ -1,6 +1,7 @@
 # intigriti_auth
 
 [![License](https://img.shields.io/github/license/ownjoo/intigriti_auth)](LICENSE)
+[![Top language](https://img.shields.io/github/languages/top/ownjoo/intigriti_auth)](https://github.com/ownjoo/intigriti_auth) [![Stars](https://img.shields.io/github/stars/ownjoo/intigriti_auth)](https://github.com/ownjoo/intigriti_auth/stargazers) [![Forks](https://img.shields.io/github/forks/ownjoo/intigriti_auth)](https://github.com/ownjoo/intigriti_auth/forks) [![Issues](https://img.shields.io/github/issues/ownjoo/intigriti_auth)](https://github.com/ownjoo/intigriti_auth/issues) [![Pull requests](https://img.shields.io/github/issues-pr/ownjoo/intigriti_auth)](https://github.com/ownjoo/intigriti_auth/pulls)
 OAuth2 authorization for the Intigriti API
 
 # SECURITY NOTE:
